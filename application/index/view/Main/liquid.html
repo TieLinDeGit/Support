@@ -1,0 +1,752 @@
+ <!DOCTYPE html>
+<html>
+<head>
+	<title>供液</title>
+	<meta charset="utf-8">
+	<!-- 引入 echarts.js -->
+    <script src="__JS__/jquery.min.js"></script>
+	<script src="__JS__/echarts.min.js"></script>
+    <script src="__JS__/echarts-liquidfill.js"></script>
+
+	<style>
+		body {
+            background-color: #263238;/*#263A47;*/
+            font-family: '黑体';
+            font-size: 1vw;
+        }
+        table{
+             /*background-color:rgba(50,50,50,0.7); */
+            /*border:1px;*/
+            color: #fff;
+        }
+        th{
+            height: 3vw;
+        }
+        td{
+             /* border:solid 1px black;  */
+            min-width: 3vw;
+            text-align: center;
+            font-size: 1.1vw;
+            height: 2vw;
+            width: 8vw;
+        }
+        span{
+            font-family: "verdana";
+            font-size: 1.5vw;
+            position: absolute;
+            letter-spacing: 0.2vw;
+            color: #fff;
+        }
+        div{
+            position: absolute;
+        }
+        p{
+            font-family: "verdana";
+            font-size: 1.2vw;
+            position: absolute;
+            /*letter-spacing: 0.2vw;*/
+            color: #fff;
+        }
+        .frame{
+            border: 2px solid rgba(238, 238, 238, 0.6);
+            border-radius: 15px;
+            box-shadow: 0 -8px 10px 1px rgba(16, 16, 16, 0.5);
+        }
+	</style>
+</head>
+<body>
+<!-- 工作状态 -->
+<div style="left: 2vw;top: .5vw;width: 22vw;height: 14vw;" class="frame" id="tableState"></div>
+<div id="xtyl" style="left: 25vw;width: 10vw;height: 10vw;"></div>
+<div id="pyxyw" style="left: 38vw;width: 10vw;height: 10vw;"></div>
+<div id="rhynd" style="left: 31vw;top: 9vw;width: 10vw;height: 10vw;"></div>
+<!-- 进出口压力表 -->
+<!-- <div id="dashboard" style="left: 38vw;top: .5vw;width: 17vw;height: 17vw;"></div> -->
+
+<!-- 液泵工作表 -->
+<div style="left: 2.5vw;top: 32.5vw;width: 40vw;height: 10vw;" class="frame">
+    <table>
+        <thead>
+            <th>
+                <td>泵油压力(kg)</td>
+                <td>泵油温度(℃)</td>
+                <td>泵蓄能器(mpa)</td>
+                <td>泵油位(mm)</td>
+            </th>
+        </thead>
+        <tbody id="tablePump"></tbody>
+    </table>
+</div>
+
+<!-- 液泵 -->
+<div style="left: 2vw;top: 18vw;width: 48vw;height: 10vw;" id="textPump"></div>
+
+<!-- 系统压力曲线 -->
+<!-- <div id="chart_1" style="opacity: 1;left: 2vw;top: 33vw;width: 48vw;height: 13vw;" class="frame"></div> -->
+<div id="SystemPressure" style="opacity: 1;left: 50vw;top: 0.5vw;width: 47vw;height: 13vw;" class="frame"></div>
+
+<!-- 配液箱液位曲线 -->
+<div id="TankLevel" style="opacity: 1;left: 50vw;top: 15vw;width: 47vw;height: 13vw;" class="frame"></div>
+
+<!-- 乳化液浓度曲线 -->
+<div id="EmulsionCon" style="opacity: 1;left: 50vw;top: 29.5vw;width: 47vw;height: 13vw;" class="frame"></div>
+
+<script>
+    /* 液泵工作表数据 */
+    oilpres1 = <?php echo json_encode($oilpres1);?>;
+    // alert(JSON.stringify(oilpres1));
+    oiltemp1 = <?php echo json_encode($oiltemp1);?>;
+    accumulator1 = <?php echo json_encode($accumulator1);?>;
+    oillevel1 = <?php echo json_encode($oillevel1);?>;
+
+    oilpres2 = <?php echo json_encode($oilpres2);?>;
+    oiltemp2 = <?php echo json_encode($oiltemp2);?>;
+    accumulator2 = <?php echo json_encode($accumulator2);?>;
+    oillevel2 = <?php echo json_encode($oillevel2);?>;
+
+    oilpres3 = <?php echo json_encode($oilpres3);?>;
+    oiltemp3 = <?php echo json_encode($oiltemp3);?>;
+    accumulator3 = <?php echo json_encode($accumulator3);?>;
+    oillevel3 = <?php echo json_encode($oillevel3);?>;
+
+    /* 折线图数据 */
+    systempres = <?php echo json_encode($systempres);?>;
+    Time = <?php echo json_encode($Time);?>;
+    tanklevel = <?php echo json_encode($tanklevel);?>;
+    emulsionconcent = <?php echo json_encode($emulsionconcent);?>;
+
+    /* 工作状态面板数据 */
+    emulsionStr = <?php echo json_encode($emulsionStr);?>;
+    pump1Str = <?php echo json_encode($pump1Str);?>;
+    pump2Str = <?php echo json_encode($pump2Str);?>;
+    pump3Str = <?php echo json_encode($pump3Str);?>;
+
+    /* 液位图*/
+    pres = <?php echo json_encode($pres);?>;
+    level = <?php echo json_encode($level);?>;
+    conc = <?php echo json_encode($conc);?>;
+
+    $(function(){
+        tableStateShow(emulsionStr,pump1Str,pump2Str,pump3Str);
+        tablePumpShow(oilpres1,oiltemp1,accumulator1,oillevel1,oilpres2,oiltemp2,accumulator2,oillevel2,oilpres3,oiltemp3,accumulator3,oillevel3);
+        textPumpShow(pump1Str,pump2Str,pump3Str);
+        graphShow(systempres,tanklevel,emulsionconcent,pres,level,conc);
+        
+        var timeNum=0 ;
+        //定时刷新
+        //监测当前页面是否被点击
+        var update_time2=  setInterval(function(){
+            timeNum++;
+            liquidrefresh(); 
+        },1000); 
+    });
+
+    function liquidrefresh() {
+        var liquid = 1;
+        
+        var ajaxurl='{:url("liquid")}';
+        $.post(ajaxurl,{liquid:liquid},function(data) {
+            // alert("success!");    
+            var  data=eval(data); 
+            // alert(JSON.stringify(data));
+            var oilpres1        = data.oilpres1;
+            var oiltemp1        = data.oiltemp1;
+            var accumulator1    = data.accumulator1;
+            var oillevel1       = data.oillevel1;
+
+            var oilpres2        = data.oilpres2;
+            var oiltemp2        = data.oiltemp2;
+            var accumulator2    = data.accumulator2;
+            var oillevel2       = data.oillevel2;
+
+            var oilpres3        = data.oilpres3;
+            var oiltemp3        = data.oiltemp3;
+            var accumulator3    = data.accumulator3;
+            var oillevel3       = data.oillevel3;
+
+            var systempres      = data.systempres;
+            var Time            = data.Time;
+            var tanklevel       = data.tanklevel;
+            var emulsionconcent = data.emulsionconcent;
+
+            var emulsionStr     = data.emulsionStr;
+            var pump1Str        = data.pump1Str;
+            var pump2Str        = data.pump2Str;
+            var pump3Str        = data.pump3Str;
+
+            var pres            = data.pres;
+            var level           = data.level;
+            var conc            = data.conc;
+          
+            tableStateShow(emulsionStr,pump1Str,pump2Str,pump3Str);
+            tablePumpShow(oilpres1,oiltemp1,accumulator1,oillevel1,oilpres2,oiltemp2,accumulator2,oillevel2,oilpres3,oiltemp3,accumulator3,oillevel3);
+            textPumpShow(pump1Str,pump2Str,pump3Str);
+            graphShow(systempres,tanklevel,emulsionconcent,pres,level,conc);
+
+        },"json");
+    }
+
+    function tableStateShow(emulsionStr,pump1Str,pump2Str,pump3Str) {
+        var str="";
+        document.getElementById("tableState").innerHTML = "";
+        str = "<div style='opacity: 1;left: 5.5vw;top: 1vw;width: 11vw;height: 2.5vw;background-color: #6f0;' class='frame'><span style='font: 1.7vw verdana;left: 1.2vw;letter-spacing: .5vw;'>工作状态</span></div><span style='font: 1.2vw 黑体;left: 3vw;top: 5vw;'>乳化液状态：</span><span style='font: 1.2vw 黑体;left: 13vw;top: 5vw;'>"+emulsionStr+"</span><span style='font: 1.2vw 黑体;left: 3vw;top: 7vw;'>1#泵状态： </span><span style='font: 1.2vw 黑体;left: 13vw;top: 7vw;'>"+pump1Str+"</span><span style='font: 1.2vw 黑体;left: 3vw;top: 9vw;'>2#泵状态：</span><span style='font: 1.2vw 黑体;left: 13vw;top: 9vw;'>"+pump2Str+"</span><span style='font: 1.2vw 黑体;left: 3vw;top: 11vw;'>3#泵状态：</span><span style='font: 1.2vw 黑体;left: 13vw;top: 11vw;'>"+pump3Str+"</span>";
+        $("#tableState").append(str);
+    }
+
+    function tablePumpShow(oilpres1,oiltemp1,accumulator1,oillevel1,oilpres2,oiltemp2,accumulator2,oillevel2,oilpres3,oiltemp3,accumulator3,oillevel3) {
+        var str1 = "";
+        document.getElementById("tablePump").innerHTML = "";
+        str1 = "<tr><td>1#液泵</td><td>"+oilpres1+"</td><td>"+oiltemp1+"</td><td>"+accumulator1+"</td><td>"+oillevel1+"</td></tr><tr><td>2#液泵</td><td>"+oilpres2+"</td><td>"+oiltemp2+"</td><td>"+accumulator2+"</td><td>"+oillevel2+"</td></tr><tr><td>3#液泵</td><td>"+oilpres3+"</td><td>"+oiltemp3+"</td><td>"+accumulator3+"</td><td>"+oillevel3+"</td></tr>";
+        $("#tablePump").append(str1);
+    }
+
+    function textPumpShow(pump1Str,pump2Str,pump3Str) {
+        var str2 = "";
+        document.getElementById("textPump").innerHTML = "";
+        str2 = "<img src='__IMG__/Pump.png' style='position: absolute;width: 18vw;height:7.5vw;'><p style='left: 4vw;top: 7vw;'>1#液泵</p><p style='font: 1.2vw verdana;left: 9vw;top: 7vw;color: #6f0'>"+pump1Str+"</p><img src='__IMG__/Pump.png' style='position: absolute;left: 15vw;top: 0vw;width: 18vw;height:7.5vw;'><p style='left: 19vw;top: 7vw;'>2#液泵</p><p style='font: 1.2vw verdana;left: 24vw;top: 7vw;color: #6f0'>"+pump2Str+"</p><img src='__IMG__/Pump.png' style='position: absolute;left: 30vw;top: 0vw;width: 18vw;height:7.5vw;'><p style='left: 34vw;top: 7vw;'>3#液泵</p><p style='font: 1.2vw verdana;left: 39vw;top: 7vw;color: #6f0'>"+pump3Str+"</p>";
+        $("#textPump").append(str2);
+    }
+
+    function dashboardShow() {
+        var myChart = echarts.init(document.getElementById("dashboard"));
+        var option = {
+            series: [{
+                name: 'left',
+                type: 'gauge',
+                center: ['50%', '50%'],
+                radius: '87%',
+                startAngle: 268,
+                
+                endAngle: 268 - 176 * (100 / 268),
+                splitNumber: -1,
+                z: 5,
+                min: 0,
+                max: 268,
+                axisTick: {
+                    show: false
+                },
+                markLine: {
+                    symbol: 'none',
+                    lineStyle: {
+                        type: 'solid'
+                    },
+                    symbolSize: 25,
+                    data: [
+                        [{
+                                x: '50%',
+                                y: '32.5%',
+                                lineStyle: {
+                                    width: 1,
+                                    color: '#d1d1d1'
+                                }
+                            },
+                            {
+                                x: '50%',
+                                y: '67.5%'
+                            }
+                        ]
+                    ]
+                },
+
+                axisLine: {
+                    show: false, // 坐标轴线
+                    lineStyle: {
+                        // 属性lineStyle控制线条样式
+                        width: 20,
+                        color: [
+                            [268, getColorBySpeed(100)]
+                        ],
+                        shadowColor: '#e9e9e9'
+                    }
+                },
+                pointer: {
+                    show: false
+                },
+                title:{
+                    show:false
+                },
+                detail: getDetailStyleObj(true, 100),
+                data: [{
+                    value: 100,
+                    name: 'A'
+                }]
+            },
+            {
+                name: 'right',
+                type: 'gauge',
+                center: ['50%', '50%'],
+                startAngle: 450 - 180 * ((268 - 268) / 268),
+                endAngle: 270,
+                z: 5,
+                splitNumber: -1,
+                min: 268,
+                max: 0,
+                radius: '87%',
+                axisLine: {
+                    show: false, // 坐标轴线
+                    lineStyle: {
+                        // 属性lineStyle控制线条样式
+                        width: 20,
+                        color: [
+                            [268, getColorBySpeed(268)]
+                        ],
+                        shadowColor: '#e9e9e9'
+                    }
+                },
+                splitLine: {
+                    show: false
+                },
+                data: [{
+                    value: 268,
+                    name: 'B'
+                }],
+                axisTick: {
+                    show: false
+                },
+                pointer: {
+                    show: false
+                },
+                title:{
+                    show:false
+                },
+                detail: getDetailStyleObj(false, 268)
+            }
+            ]
+        }
+        myChart.setOption(option);    
+    }
+    
+    function getDetailStyleObj(isLeft, speed) {
+        //const title = data[isLeft ? 0 : 1].name
+        return {
+            fontFamily: 'PingFang SC Regular',
+            color: getTextColorBySpeed(speed),
+            offsetCenter: [isLeft ? '-45%' : '45%', '15%'],
+            formatter: function(paramas) {
+                return '{number|' + paramas + '}{speed|m/m}'
+            },
+            width: 193 / 4,
+            height: 235 / 4,
+            rich: {
+                number: {
+                    fontSize: 25,
+                    color: getTextColorBySpeed(speed)
+                },
+                speed: {
+                    fontSize: 15,
+                    color: '#fff'
+                },
+                title: {
+                    fontSize: 40,
+                    color: '#fff'
+                }
+            }
+        }
+    }
+
+    function getColorBySpeed(speed) {
+        if (speed < 170) {
+            return new echarts.graphic.LinearGradient(0, 0, 1, 0, [{
+                offset: 0,
+                color: '#eb3349'
+            },
+            {
+                offset: 1,
+                color: '#ea162c'
+            }], false)
+        }
+        else if (speed < 186) {
+            return new echarts.graphic.LinearGradient(0, 0, 1, 0, [{
+                offset: 0,
+                color: '#27e164'
+            },
+            {
+                offset: 1,
+                color: '#20c556'
+            }], false)
+        }
+        else if (speed > 185) {
+            return new echarts.graphic.LinearGradient(0, 0, 1, 0, [{
+                offset: 0,
+                color: '#509aff'
+            },
+            {
+                offset: 1,
+                color: '#387bd6'
+            }], false)
+        }
+    }
+
+    function getTextColorBySpeed(speed) {
+        if (speed < 170) {
+            return '#f81129'
+        }
+        else if (speed < 186) {
+            return '#0dd64f'
+        }
+        else if (speed > 185) {
+            return '#5095f3'
+        }
+    }
+
+    function graphShow(systempres,tanklevel,emulsionconcent,pres,level,conc) {
+
+
+        var myChart = echarts.init(document.getElementById("xtyl"));
+            var option = {
+               // backgroundColor: '#884046',
+                title: {
+                    text: '当前系统压力',
+                    textStyle: {
+                        fontWeight: 'bold',
+                        fontSize: 20,
+                        color: ['#195ba6'],
+                    }
+                },
+
+                series: [ {
+
+                        type: 'liquidFill',
+                        radius: '60%',
+                        color: ['#195ba6'],
+
+                        data: [pres/40],
+                        label: {
+                            normal: {
+                                formatter: (pres * 1).toFixed(0) ,
+                                textStyle: {
+                                    fontSize: 25
+                                },
+                            }
+                        },
+
+                        backgroundStyle: {
+                            borderWidth: 2,
+                            borderColor: '#1789fb',
+                            color: '#1c233f',
+                        },
+                        outline: {
+                            itemStyle: {
+                                borderWidth: 5,
+                                borderColor: '#1789fb',
+                                borderType: 'dashed',
+                            }
+                        },
+                        
+
+                    }]
+            }
+
+         myChart.setOption(option);
+
+         var myChart = echarts.init(document.getElementById("pyxyw"));
+            var option = {
+               // backgroundColor: '#884046',
+                title: {
+                    text: '当前配液箱液位',
+                    textStyle: {
+                        fontWeight: 'bold',
+                        fontSize: 20,
+                        color: '#884046'
+                    }
+                },
+
+                series: [ {
+
+                        type: 'liquidFill',
+                        radius: '60%',
+                        color: ['#884046'],
+
+                        data: [level/1500],
+                        backgroundStyle: {
+                            borderWidth: 2,
+                            borderColor: '#eb5c4d',
+                            color: '#1c233f',
+                        },
+                        outline: {
+                            itemStyle: {
+                                borderWidth: 5,
+                                borderColor: '#eb5c4d',
+                                borderType: 'dashed',
+                            }
+                        },
+                        label: {
+                        normal: {
+                            formatter: (level * 1).toFixed(0) ,
+                            textStyle: {
+                                fontSize: 25
+                            }
+                        }
+                    }
+
+                    }]
+            }
+
+         myChart.setOption(option);
+
+         var myChart = echarts.init(document.getElementById("rhynd"));
+            var option = {
+               // backgroundColor: '#884046',
+                title: {
+                    text: '当前乳化液浓度',
+                    textStyle: {
+                        fontWeight: 'bold',
+                        fontSize: 20,
+                        color: ['#8a7e4e'],
+                    }
+                },
+
+                series: [ {
+
+                        type: 'liquidFill',
+                        radius: '60%',
+                        color: ['#8a7e4e'],
+
+                        data: [conc/8],
+                        backgroundStyle: {
+                borderWidth: 2,
+                borderColor: '#f0d25c',
+                color: '#1c233f',
+            },
+                        outline: {
+                            itemStyle: {
+                                borderWidth: 5,
+                                borderColor: '#f0d25c',
+                                borderType: 'dashed',
+                            }
+                        },
+                        label: {
+                        normal: {
+                            formatter: (conc * 1).toFixed(0) ,
+                            textStyle: {
+                                fontSize: 25
+                            }
+                        }
+                    }
+
+                    }]
+            }
+
+         myChart.setOption(option);
+
+
+        var myChart = echarts.init(document.getElementById("SystemPressure"));
+        var option = {
+            title: {
+                text: '系统压力曲线',
+                textStyle: {
+                    color: '#fff'
+                }
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            grid: {
+                left: '3%',
+                top: '20%',
+                right: '4%',
+                bottom: '10%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: systempres.map(function(item){
+                    return item[0];
+                }),
+                axisLabel: {
+                    show: true,
+                    textStyle: {
+                      color: '#fff'
+                    },
+                },
+                axisLine:{
+                    lineStyle:{
+                        color:'#fff',
+                    }
+                }
+            },
+            yAxis: {
+                type: 'value',
+                axisLabel: {
+                    show: true,
+                    textStyle: {
+                      color: '#fff'
+                    },
+                },
+                axisLine:{
+                        lineStyle:{
+                            color:'#fff',
+                        }
+                },
+            },
+            // toolbox:{
+            //     left: 'center',
+            //     feature: {
+            //         dataZoom: {
+            //             yAxisIndex: 'none'
+            //         },
+            //         restore: {},
+            //         saveAsImage: {}
+            //     }
+            // },
+            // dataZoom: [
+            //     {
+            //         type: 'inside',
+            //         startValue: Time,
+            //     },
+            //     {
+            //         type: 'slider',
+            //         // backgroundColor: 'rgba(47,69,84,0)',
+            //         handleStyle: {
+            //             color: '#db9c2c',
+            //             borderWidth: "1",
+            //             shadowColor: "#db9c2c",
+            //         },
+            //         textStyle:{
+            //             color: '#db9c2c',
+            //         }
+            //     },
+            // ],
+            series: [
+                {
+                    type:'line',
+                    data: systempres.map(function(item){
+                        return item[1];
+                    }),
+                    itemStyle:{color:'#db9c2c'}
+                },
+            ]
+        };
+        myChart.setOption(option);
+
+        var myChart = echarts.init(document.getElementById("TankLevel"));
+        option = {
+            title: {
+                text: '配液箱液位曲线',
+                textStyle: {
+                    color: '#fff'
+                }
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            grid: {
+                left: '5%',
+                top: '20%',
+                right: '5%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: tanklevel.map(function(item){
+                    return item[0];
+                }),
+                axisLabel: {
+                    show: true,
+                    textStyle: {
+                      color: '#fff'
+                    },
+                },
+                axisLine:{
+                    lineStyle:{
+                        color:'#fff',
+                    }
+                }
+            },
+            yAxis: {
+                type: 'value',
+                axisLabel: {
+                    show: true,
+                    textStyle: {
+                      color: '#fff'
+                    },
+                },
+                axisLine:{
+                    lineStyle:{
+                        color:'#fff',
+                    }
+                }
+            },
+            series: [
+                {
+                    type:'line',
+                    data:tanklevel.map(function(item){
+                        return item[1];
+                    }),
+                    itemStyle:{color:'green'}
+                },
+            ]
+        };
+        myChart.setOption(option);
+
+        var myChart = echarts.init(document.getElementById("EmulsionCon"));
+        option = {
+            title: {
+                text: '乳化液浓度曲线',
+                textStyle: {
+                    color: '#fff'
+                }
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            grid: {
+                left: '5%',
+                top: '20%',
+                right: '5%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: emulsionconcent.map(function(item){
+                    return item[0];
+                }),
+                axisLabel: {
+                    show: true,
+                    textStyle: {
+                      color: '#fff'
+                    },
+                },
+                axisLine:{
+                    lineStyle:{
+                        color:'#fff',
+                    }
+                }
+            },
+            yAxis: {
+                type: 'value',
+                axisLabel: {
+                    show: true,
+                    textStyle: {
+                      color: '#fff'
+                    },
+                },
+                axisLine:{
+                    lineStyle:{
+                        color:'#fff',
+                    }
+                }
+            },
+            series: [
+                {
+                    type:'line',
+                    data:emulsionconcent.map(function(item){
+                        return item[1];
+                    }),
+                    itemStyle:{color:'blue'}
+                },
+            ]
+        };
+        myChart.setOption(option);   
+    }
+    
+
+</script>
+
+</body>
+</html>

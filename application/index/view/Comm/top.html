@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=9"/>
+	<meta http-equiv="X-UA-Compatible" content="IE=10"/>
+	<link rel='stylesheet' type='text/css' href='__CSS__/style.css'>
+ 	<script type="text/javascript" src="__JS__/jquery.js"></script>
+
+ 	<style>
+ 		#header{
+ 			background: url(__IMG__/banner.png) no-repeat ;
+ 			background-size: 100% 100%;
+ 		}
+ 		.button{
+ 			-webkit-border-radius: 3;
+ 			-moz-border-radius: 3;
+ 			border-radius: 3px;
+  			text-shadow: 0px 1px 0px #283966;
+ 			-webkit-box-shadow: inset 0px -3px 7px 0px #9fb4f2;
+  			-moz-box-shadow: inset 0px -3px 7px 0px #9fb4f2;
+  			box-shadow: inset 0px -3px 7px 0px #9fb4f2;
+ 			font-family: Arial;
+ 	 		color: #ffffff;
+  			background: #04070b;
+   			width:7vw;
+ 			font-size:1vw;
+    		border: solid #4e6096 1px;
+  			text-decoration: none;
+ 		}
+ 		.button:hover{
+ 			color: #ffffff;
+ 			background: #476e9e;
+ 			text-decoration: none;
+ 		}
+ 	</style>
+</head>
+<body>
+	<!-- 头部区域 -->
+	<div id="header" class="header">
+		<div class="headTitle">
+			<div style="margin-top: 0vw;">
+				<h2 style="font-size: 1.3vw;"  id="top_head"> </h2>
+				<button class="button" style="margin: .1vw 1vw 0vw 0vw;" onclick="top.main.location='../Main/hydraulic.html' ";>
+				液压支架</button>
+
+				<button class="button" style="margin: .1vw 1vw 0vw 0vw;" onclick="top.main.location='../Main/liquid.html' ";>
+				乳化泵</button>
+
+				<button class="button" style="margin: .1vw 1vw 0vw 0vw;" onclick="top.main.location='../Main/power.html' ";>
+				供电系统</button>
+			</div>
+		</div>
+
+		<!-- 功能导航区 -->
+		<div class="nav">
+			<table>
+				<tr>
+					<td style="margin-top: 5px;">
+						欢迎你！&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+						<span id="Clock"></span>
+					</td>
+				</tr>
+			</table>
+		</div>
+	</div>
+
+	<script>
+
+		window.onload = tick;
+
+		function tick()
+		{
+			var today = new Date();//系统当前时间
+			var intYears = today.getFullYear();
+			var intMonths = today.getMonth() + 1;
+			var intDays = today.getDate();
+			var intHours = today.getHours();
+			var intMinutes = today.getMinutes();
+			var intSeconds = today.getSeconds();
+
+			var years = intYears;
+			var months = (intMonths<10)?("0"+intMonths):intMonths;
+			var days = (intDays<10)?("0"+intDays+" "):intDays+" ";
+			var minutes = (intMinutes<10)?("0"+intMinutes+":"):intMinutes+":";
+			var seconds = (intSeconds<10)?("0"+intSeconds+" "):intSeconds+" ";
+			var hours;
+			if (intHours == 0) {
+				hours = "00:";
+			}
+			else if (intHours < 10) {
+				hours = "0" + intHours+":";
+			}
+			else {
+				hours = intHours + ":";
+			}
+
+			var timeString = years+"-"+months+"-"+days+" "+hours+minutes+seconds+"  ";
+			// alert(timeString);
+			var clock = document.getElementById("Clock");
+			clock.innerHTML = timeString;
+			window.setTimeout(function(){tick()},1000);
+		}
+	</script>
+</body>
+</html>

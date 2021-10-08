@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>支架</title>
+	<meta charset="utf-8">
+	<!-- 引入 echarts.js -->
+	<script src="__JS__/jquery.js"></script>
+	<script src="__JS__/jquery.min.js"></script>
+	<script src="__JS__/echarts.min.js"></script>
+	<style>
+		body {
+            background-color: #263238;
+            font-family: '黑体';
+            font-size: 1vw;
+        }
+        td {
+            /*min-height: 3vw;*/
+            min-width: 3vw;
+            height: 3vw
+        }
+        p{
+        	font-family: 'verdana';
+        	font-size: 1.4vw;
+        	color: #fff;
+        }
+        .frame{
+            border: 2px solid rgba(238, 238, 238, 0.6);
+            border-radius: 15px;
+            box-shadow: 0 -8px 10px 1px rgba(16, 16, 16, 0.5);
+        }
+	</style>
+</head>
+
+	<!-- 立柱压力1 -->
+	<p style="position: absolute;left: 3vw;top: 0vw;width: 2vw;">
+		<!-- <b>立<br>柱<br>压<br>力<br>1</b> -->
+		<b>立柱压力1</b>
+	</p>
+	<div id="chart_1" style="position: absolute;left: 6vw;top: 1.5vw;width: 91.5vw;height: 9vw;" class="frame"></div>
+	<!-- 立柱压力2 -->
+	<p style="position: absolute;left: 3vw;top: 11vw;width: 2vw">
+		<b>立柱压力2</b>
+	</p>
+	<div id="chart_2" style="position: absolute;left: 6vw;top: 12.5vw;width: 91.5vw;height: 9vw;" class="frame"></div>
+	<!-- 煤机 -->
+	<p style="font: 1.2vw verdana;position: absolute;left: 2.5vw;top: 22vw;letter-spacing: .2vw;"><b>煤机</b></p>
+	<div style="position: absolute;left: 6vw;top: 23vw;width: 91vw;height: 2vw;" id="CoalMachine">
+		<!-- <img src="Shearer_1.png" style="position: absolute;left: .5vw;width: 90vw;height: 2vw"> 位置0-86  -->
+	</div>
+
+	<!-- 警示信息 -->
+	<p style="position: absolute;left: 3vw;top: 26vw;width: 2vw;">
+		<b>警示信息</b>
+	</p>
+	<div id="chart_3" style="position: absolute;left: 6vw;top: 26vw;width: 91.5vw;height: 12vw;" class="frame"></div>
+
+	<!-- 通知框 -->
+	<div style="position: absolute;left: 2vw;top: 40vw;width: 95vw;height: 9vw;" class="frame" id="alarm">	
+	</div>
+
+
+<script>
+	support_num = <?php echo json_encode($support_num);?>;
+	pressure1 = <?php echo json_encode($pressure1);?>;
+	pressure2 = <?php echo json_encode($pressure2);?>;
+	position = <?php echo json_encode($position);?>;
+	getPositionByData = <?php echo json_encode($getPositionByData);?>;
+	address = <?php echo json_encode($address);?>;
+	electromagnetic = <?php echo json_encode($electromagnetic);?>;
+	sensor = <?php echo json_encode($sensor);?>;
+	overcurrent = <?php echo json_encode($overcurrent);?>;
+	filter = <?php echo json_encode($filter);?>;
+	emergencyStop = <?php echo json_encode($emergencyStop);?>;
+	locked = <?php echo json_encode($locked);?>;
+
+	var num = 1;
+	var x = new Array();//初始化横坐标
+		for(i=0;i<support_num;i++)
+		{
+			x[i] = i+1;
+		}
+	// alert(JSON.stringify(pressure1));
+	$(function(){
+		
+		var data = address.concat(electromagnetic).concat(sensor).concat(overcurrent).concat(filter).concat(emergencyStop).concat(locked);
+		
+		paint_line1(pressure1);
+		paint_line2(pressure2);
+		paint_line3(data);
+		CoalMachine(getPositionByData,position);
+		alarmShow();
+
+		var timeNum=0 ;
+        //定时刷新
+        //监测当前页面是否被点击
+        var update_time1=  setInterval(function(){
+	        timeNum++;
+			// alert(timeNum);
+			refresh(); 
+	    },1000); 
+	});
+
+	function refresh(){
+		var refresh = 1;	
+		// alert(1);
+ 		// var ajaxurl="{:url('Main/hydraulic_monitor')}";
+ 		var ajaxurl='{:url("hydraulic_monitor")}';
+ 		$.post(ajaxurl, {refresh: refresh}, function(all){
+ 			var  all=eval(all); 
+ 			// var data1 = JSON.stringify(all);
+ 			// alert(data1);
+			var pressure1         = all.pressure1;
+            var pressure2         = all.pressure2;
+            var position          = all.position;
+            var getPositionByData = all.getPositionByData;
+            var address           = all.address;
+            var electromagnetic   = all.electromagnetic;
+            var sensor            = all.sensor;
+            var overcurrent       = all.overcurrent;
+            var filter            = all.filter;
+            var emergencyStop     = all.emergencyStop;
+            var locked            = all.locked;
+            var refresh           = all.refresh;
+
+            // alert(position);
+			var data = address.concat(electromagnetic).concat(sensor).concat(overcurrent).concat(filter).concat(emergencyStop).concat(locked);
+ 			paint_line1(pressure1);
+			paint_line2(pressure2);
+			paint_line3(data);
+			CoalMachine(getPositionByData,position);
+ 			
+ 		})
+ 		.error(function() { alert("error"); })
+ 	}
+//
+	function paint_line1(pressure1){
+		var myChart = echarts.init(document.getElementById("chart_1"));
+		option = {
+			 grid: {
+		        left: '1%',
+	        	top: '15%',
+	        	right: '2%',
+	        	bottom: '10%',
+
+		        containLabel: true
+		    },
+		    xAxis: {
+		        type: 'category',
+		        data:x,
+		        axisLabel: {
+		            show: true,
+		                textStyle: {
+		                  color: '#fff'  
+		                },
+		        },
+		        axisLine:{
+		                lineStyle:{
+		                    color:'#fff',
+		                        }
+		        } 
+		    },
+		    yAxis: {
+		        type: 'value',
+		        axisLabel: {
+		            show: true,
+		                textStyle: {
+		                  color: '#fff'  
+		                },
+		        },
+		        axisLine:{
+		                lineStyle:{
+		                    color:'#fff',
+		                        }
+		        } 
+		    },
+		     visualMap: {
+		     	show:false,
+		            pieces: [{
+		                gt: 0,
+		                lte: 50,
+		                color: 'blue'
+		            }, {
+		                gt: 50,
+		                lte: 150,
+		                color: 'blue'
+		            },  {
+		                gt: 150,
+		                color: 'blue'
+		            }],
+		        },
+		    series: [{
+		        data: pressure1,
+		        type: 'bar',
+		         markLine: {
+		                silent: true,
+		                data: [{
+		                    yAxis: 50
+		                }, {
+		                    yAxis: 150
+		                }]
+		            }
+		    }]
+		};
+		myChart.setOption(option);	
+	}
+	function paint_line2(pressure2) {
+		var myChart = echarts.init(document.getElementById("chart_2"));
+		option = {
+			 grid: {
+		        left: '1%',
+	        	top: '15%',
+	        	right: '2%',
+	        	bottom: '10%',
+		     
+		        containLabel: true
+		    },
+		    xAxis: {
+		        type: 'category',
+		        data:x,
+		        axisLabel: {
+		            show: true,
+		                textStyle: {
+		                  color: '#fff'  
+		                },
+		        },
+		        axisLine:{
+		                lineStyle:{
+		                    color:'#fff',
+		                        }
+		        } 
+		    },
+		    yAxis: {
+		        type: 'value',
+		        axisLabel: {
+		            show: true,
+		                textStyle: {
+		                  color: '#fff'  
+		                },
+		        },
+		        axisLine:{
+		                lineStyle:{
+		                    color:'#fff',
+		                        }
+		        } 
+		    },
+		    series: [{
+		    	itemStyle:{color:'yellow'},
+		        data: pressure2,
+		        type: 'bar',
+
+		    }]
+		};
+		myChart.setOption(option);	
+	}
+
+	function paint_line3(data) {
+		var myChart = echarts.init(document.getElementById("chart_3"));
+		var y = ['地址重复标志','电磁阀故障 ', '传感器故障 ', '过流故障  ','过滤器故障 ','急停状态  ','锁闭状态  '];
+		// var data = address.concat(electromagnetic).concat(sensor).concat(overcurrent).concat(filter).concat(emergencyStop).concat(locked);
+		// alert(JSON.stringify(data));
+
+		data = data.map(function (item) {
+		    return [item[1], item[0], item[2]];
+		});
+
+		option = {
+		    // tooltip: {
+		    //     position: 'top'
+		    // },
+		    animation: true,
+		    grid: {
+		    	left: '7%',
+		    	top: '5%',
+		    	right: '1%',
+		        bottom: '15%',
+		    },
+		    xAxis: {
+		        type: 'category',
+		        data: x,
+		        // splitArea: {
+		        //     show: true,
+		        // },
+		        axisLabel: {
+		        	show: true,
+		        	textStyle:{
+		        		color:"#fff"
+		        	},
+		        },
+		        // axisTick: {
+		        // 	show: false,
+		        // },
+		        axisLine:{
+		        	lineStyle:{
+		        		color:"#fff",
+		        	},
+		        }
+		    },
+		    yAxis: {
+		        type: 'category',
+		        data: y,
+		        splitArea: {
+		            show: true
+		        },
+		        axisLabel: {
+		        	color: '#12ff00',
+		        	fontFamily: 'verdana',
+		        	fontSize: 14,
+		        },
+		    },
+		    visualMap: {
+		    	show: false,
+		        min: 0,
+		        max: 70,
+		        calculable: true,
+		        orient: 'horizontal',
+		        left: 'center',
+		        bottom: '15%',
+		        inRange: {
+		            color: ['#eeeeee','#01579b','#1a237e','#d500f9','#ff3d00','#b71c1c','#ffff00']
+		        }
+		    },
+		    series: [{
+		        name: '警示信息',
+		        type: 'heatmap',
+		        data: data,
+		        label: {
+		            show: false,
+		        },
+		        emphasis: {
+		            itemStyle: {
+		                shadowBlur: 10,
+		                shadowColor: 'rgba(0, 0, 0, 0.5)'
+		            }
+		        }
+		    }]
+		};
+		myChart.setOption(option);	
+	}
+
+	function CoalMachine(getPositionByData,position){
+		var str = "";
+		document.getElementById("CoalMachine").innerHTML = "";
+		str = "<div style='opacity: 1;position: absolute;left: "+getPositionByData+";width: 5vw;height: 1.5vw;'><p style='font: .8vw verdana;position: absolute;left: 2vw;top: -1vw;color: #12ff00'><b>"+position+"</b></p><img src='__IMG__/ShearerQ.png' style='position: absolute;left: -0.25vw;top: 0vw;width: 5vw;height: 1.4vw'></div><p style='font: .8vw verdana;position: absolute;left: 88vw;top: -0.5vw;color: #12ff00'></p><div style='position: absolute;left: .5vw;top: 1.5vw;width: 90vw;height: .3vw;background-color: #fff'></div>";
+
+  		$("#CoalMachine").append(str);
+	}
+
+	function alarmShow() {
+		var str1 = "";
+		document.getElementById("alarm").innerHTML = "";
+		str1 = '<iframe style="position: absolute;left: .5vw;top: .5vw;" src="alarm.html" width="99%" height="90%" align="middle" frameborder="0"></iframe>';
+		$("#alarm").append(str1);
+	}
+	
+</script>
+</html>

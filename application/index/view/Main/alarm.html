@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title></title>
+	<script type="text/javascript" src="__JS__/jquery.js"></script>
+	<style type="text/css" media="screen">
+		body{
+			background-color: #263238;
+			/*height: 100%;
+			width: 100%;
+			font-family: '宋体';
+   			font-size: 1.2vw;*/
+		}
+		table{
+			border: 1px;
+			width: 100%;
+			color: #fff;
+		}
+		thead{
+			font-size: 1.4vw;
+		}
+		tr{
+            height: 3vw;
+        }
+        th{
+             /* border:solid 1px black;  */
+            min-width: 3vw;
+            text-align: center;
+            font-size: 1.1vw;
+            height: 2vw;
+            width: 8vw;
+        }
+        td{
+             /* border:solid 1px black;  */
+            min-width: 2vw;
+            text-align: center;
+            font-size: 1.1vw;
+            height: 2vw;
+            /* width: 8vw; */
+        }
+	</style>
+</head>
+<body>
+	<table style="" width="100%">
+		<thead>
+    		<tr>
+               	<th>设备类型</th>
+				<th>设备名称</th>
+				<th>报警开始时间</th>
+				<th>报警内容</th>
+				<th>报警等级</th>
+				<th>报警原因</th>
+				<th>解决方法</th>
+        	</tr>
+      	</thead>
+		<tbody id='tbody1'>
+			
+		</tbody>
+	</table>
+</body>
+<script>
+	alarmdata = <?php echo json_encode($alarmdata);?>;
+	numb = <?php echo json_encode($numb);?>;
+	// alert(JSON.stringify(alarmdata));
+	$(function(){
+		showalarm(alarmdata,numb);
+		
+		var timeNum=0 ;
+        //定时刷新
+        //监测当前页面是否被点击
+        var update_time2=  setInterval(function(){
+	        timeNum++;
+			alarmUpdata(); 
+	    },1000); 
+	});
+
+	function alarmUpdata() {
+		var alarmUpdata = 1;
+		var ajaxurl='{:url("alarm")}';
+		$.post(ajaxurl,{alarmUpdata:alarmUpdata},function(data) {		
+			var  data=eval(data); 
+			// alert(JSON.stringify(data));
+			var alarmdata = data.alarmdata;
+			var numb = data.numb;
+			showalarm(alarmdata,numb);
+		},"json");
+	}
+
+	function showalarm(alarmdata,numb) {
+		var str="";
+		var temp_alarmlvl;
+		document.getElementById("tbody1").innerHTML = "";
+		for(i=0;i<numb;i++){
+
+			if(alarmdata[i]['level'] == 1)
+			{
+				temp_alarmlvl = "一级报警";
+			}
+			else if(alarmdata[i]['level'] == 2)
+			{
+				temp_alarmlvl = "二级报警";
+			}
+			else if(alarmdata[i]['level'] == 3)
+			{
+				temp_alarmlvl = "初级报警";
+			}
+			else if(alarmdata[i]['level'] == 4)
+			{
+				temp_alarmlvl = "次要报警";
+			}
+
+			str +="<tr><td>"+alarmdata[i]['devicetype']+"</td><td>"+alarmdata[i]['devicename']+"</td><td>"+alarmdata[i]['start_datetime']+"</td><td>"+alarmdata[i]['alarm_name']+"</td><td>"+temp_alarmlvl+"</td><td>"+alarmdata[i]['reason']+"</td><td>"+alarmdata[i]['solution']+"</td></tr>";
+		}
+	  	$("#tbody1").append(str);	
+	}
+	
+</script>
+</html>
